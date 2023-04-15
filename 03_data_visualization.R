@@ -2,21 +2,21 @@
 # “The simple graph has brought more information to the data analyst’s mind than any other device.” 
 
 # Load the library
- library(tidyverse)
+library(tidyverse)
 
- # If we need to be explicit about where a function (or dataset) comes from, we’ll use the special 
- # form package::function(). For example, ggplot2::ggplot() tells you explicitly that we’re using 
- # the ggplot() function from the ggplot2 package. 
+# If we need to be explicit about where a function (or dataset) comes from, we’ll use the special 
+# form package::function(). For example, ggplot2::ggplot() tells you explicitly that we’re using 
+# the ggplot() function from the ggplot2 package. 
  
- # Let’s use our first graph to answer a question: Do cars with big engines use more fuel than cars 
- # with small engines? 
+# Let’s use our first graph to answer a question: Do cars with big engines use more fuel than cars 
+# with small engines? 
  
- # You probably already have an answer, but try to make your answer precise. What does the relationship 
- # between engine size and fuel efficiency look like? Is it positive? Negative? Linear? Nonlinear?
+# You probably already have an answer, but try to make your answer precise. What does the relationship 
+# between engine size and fuel efficiency look like? Is it positive? Negative? Linear? Nonlinear?
  
- # You can test your answer with the mpg data frame found in ggplot2 (aka ggplot2::mpg). 
- # A data frame is a rectangular collection of variables (in the columns) and observations (in the rows). 
- # mpg contains observations collected by the US Environmental Protection Agency on 38 models of car.
+# You can test your answer with the mpg data frame found in ggplot2 (aka ggplot2::mpg). 
+# A data frame is a rectangular collection of variables (in the columns) and observations (in the rows). 
+# mpg contains observations collected by the US Environmental Protection Agency on 38 models of car.
  
 mpg
 
@@ -100,12 +100,21 @@ ggplot(data = mpg) +
 ggplot(data = mpg) + 
   geom_point(mapping = aes(x = displ, y = hwy, size = class))
 
+# Or we could have mapped class to the alpha aesthetic, which controls the transparency of the points, or to the shape aesthetic, which controls the shape of the points.
 
+# Left
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, alpha = class))
 
+# Right
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy, shape = class))
 
+# You can also set the aesthetic properties of your geom manually. For example, we can make all of the points in our plot blue:
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
 
-
-
+# 3.5 Facets
 
 
 
