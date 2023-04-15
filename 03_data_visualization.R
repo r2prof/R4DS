@@ -112,7 +112,7 @@ ggplot(data = mpg) +
 
 # You can also set the aesthetic properties of your geom manually. For example, we can make all of the points in our plot blue:
 ggplot(data = mpg) + 
-  geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+  geom_point(mapping = aes(x = displ, y = hwy), color = "navyblue")
 
 # 3.5 Facets
 
