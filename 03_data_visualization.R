@@ -114,10 +114,124 @@ ggplot(data = mpg) +
 ggplot(data = mpg) + 
   geom_point(mapping = aes(x = displ, y = hwy), color = "navyblue")
 
-# 3.5 Facets
+# 3.5 Facets - for categorical variables
 
+# One way to add additional variables is with aesthetics. Another way, particularly useful for categorical variables, is to split your plot into facets, subplots that each display one subset of the data.
 
+# To facet your plot by a single variable, use facet_wrap(). The first argument of facet_wrap() should be a formula, which you create with ~ followed by a variable name (here “formula” is the name of a data structure in R, not a synonym for “equation”). The variable that you pass to facet_wrap() should be discrete.
 
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
 
+# To facet your plot on the combination of two variables, add facet_grid() to your plot call. The first argument of facet_grid() is also a formula. This time the formula should contain two variable names separated by a ~.
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(drv ~ cyl)
 
+View(mpg)
 
+# If you prefer to not facet in the rows or columns dimension, use a . instead of a variable name, 
+# e.g. + facet_grid(. ~ cyl).
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(. ~ cyl)
+
+# 3.5.1 Exercise
+
+# Question 1. What happens if you facet on a continuous variable?
+# Here is the code with a continous variable.
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point() +
+  facet_grid(. ~ cty)
+
+# Answer: The continuous variable is converted to a categorical variable, and the plot contains a facet 
+# for each distinct value. 
+
+# Question 2. What do the empty cells in plot with facet_grid(drv ~ cyl) mean? How do they relate to this plot?
+# Here is the code:
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(drv ~ .)
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(. ~ cyl)
+# The empty cells (facets) in this plot are combinations of drv and cyl that have no observations. 
+# These are the same locations in the scatter plot of drv and cyl that have no plots.
+
+# Question 3. What plots does the following code make? What does . do?
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(drv ~ .)
+
+# The symbol . ignores that dimension when faceting. 
+# For example, drv ~ . facet by values of drv on the y-axis.
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(. ~ cyl)
+
+# While, . ~ cyl will facet by values of cyl on the x-axis.
+
+# Question 4: Take the first faceted plot in this section:
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
+
+# What are the advantages to using faceting instead of the colour aesthetic? What are the disadvantages? How might the 
+# balance change if you had a larger dataset?
+
+# Question 5. What are the advantages to using faceting instead of the colour aesthetic? What are the disadvantages? 
+# How might the balance change if you had a larger dataset?
+# In the following plot the class variable is mapped to color.
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy, color = class))
+
+# Advantages of encoding class with facets instead of color include the ability to encode more distinct categories. 
+# For me, it is difficult to distinguish between the colors of "midsize" and "minivan".
+
+# Given human visual perception, the max number of colors to use when encoding unordered 
+# categorical (qualitative) data is nine, and in practice, often much less than that. 
+# Displaying observations from different categories on different scales makes it difficult to directly compare 
+# values of observations across categories. However, it can make it easier to compare the shape of the 
+# relationship between the x and y variables across categories.
+# 
+# Disadvantages of encoding the class variable with facets instead of the color aesthetic include the difficulty 
+# of comparing the values of observations between categories since the observations for each category are on different 
+# plots. Using the same x- and y-scales for all facets makes it easier to compare values of observations across 
+# categories, but it is still more difficult than if they had been displayed on the same plot. 
+# 
+# Since encoding class within color also places all points on the same plot, it visualizes the unconditional 
+# relationship between the x and y variables; with facets, the unconditional relationship is no longer visualized 
+# since the points are spread across multiple plots.
+ 
+# The benefits encoding a variable through facetting over color become more advantageous as either the number of 
+# points or the number of categories increase. In the former, as the number of points increases, there is likely 
+# to be more overlap.
+
+# It is difficult to handle overlapping points with color. Jittering will still work with color. 
+# But jittering will only work well if there are few points and the classes do not overlap much, otherwise, 
+# the colors of areas will no longer be distinct, and it will be hard to pick out the patterns of different 
+# categories visually. Transparency (alpha) does not work well with colors since the mixing of overlapping 
+# transparent colors will no longer represent the colors of the categories. Binning methods use already color 
+# to encode density, so color cannot be used to encode categories.
+# 
+# As noted before, as the number of categories increases, the difference between colors decreases, to the point 
+# that the color of categories will no longer be visually distinct.
+
+# Question 6. Read ?facet_wrap. What does nrow do? What does ncol do? What other options control the layout 
+# of the individual panels? Why doesn’t facet_grid() have nrow and ncol variables?
+
+# The arguments nrow (ncol) determines the number of rows (columns) to use when laying out the facets. It is 
+# necessary since facet_wrap() only facets on one variable.
+
+# The nrow and ncol arguments are unnecessary for facet_grid() since the number of unique values of the 
+# variables specified in the function determines the number of rows and columns.
+
+# Question 7. When using facet_grid() you should usually put the variable with more unique levels in 
+# the columns. Why?
+
+# There will be more space for columns if the plot is laid out horizontally (landscape).
