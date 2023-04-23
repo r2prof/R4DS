@@ -325,6 +325,147 @@ vars <- c("year", "month", "day", "dep_delay", "arr_delay")
 # Q 4. Does the result of running the following code surprise you? How do the select helpers deal with case by default? How can you change that default?
 select(flights, contains("TIME"))
 
+#-----------------------------------------------------
+# 5.5 Add new variables with mutat()
+#-----------------------------------------------------
+# Besides selecting sets of existing columns, it’s often useful to add new columns that 
+# are functions of existing columns. That’s the job of mutate().
+# 
+# mutate() always adds new columns at the end of your dataset so we’ll start by creating 
+# a narrower dataset so we can see the new variables. Remember that when you’re in RStudio, 
+# the easiest way to see all the columns is View().
+
+flights_sml <- select(flights, 
+                      year:day, 
+                      ends_with("delay"), 
+                      distance, 
+                      air_time
+)
+mutate(flights_sml,
+       gain = dep_delay - arr_delay,
+       speed = distance / air_time * 60
+)
+
+# Note that you can refer to columns that you have just created:
+mutate(flights_sml,
+       gain = dep_delay - arr_delay,
+       hours = air_time / 60,
+       gain_per_hour = gain / hours)
+
+# If you only want to keep the new variables, use transmute():
+transmute(flights,
+          gain = dep_delay - arr_delay,
+          hours = air_time / 60,
+          gain_per_hour = gain / hours
+)
+
+#------------------------------------------
+# 5.5.1 Useful creation functions
+#------------------------------------------
+# There are many functions for creating new variables that you can use with mutate(). 
+# The key property is that the function must be vectorised: it must take a vector of 
+# values as input, return a vector with the same number of values as output. 
+
+# There’s no way to list every possible function that you might use, but here’s a 
+# selection of functions that are frequently useful:
+  
+# Arithmetic operators: +, -, *, /, ^. These are all vectorised, using the so 
+# called “recycling rules”. If one parameter is shorter than the other, it will 
+# be automatically extended to be the same length. This is most useful when one 
+# of the arguments is a single number: air_time / 60, hours * 60 + minute, etc.
+
+# Arithmetic operators are also useful in conjunction with the aggregate functions 
+# you’ll learn about later. For example, x / sum(x) calculates the proportion of a total, 
+# and y - mean(y) computes the difference from the mean.
+
+# Modular arithmetic: %/% (integer division) and %% (remainder), 
+# where x == y * (x %/% y) + (x %% y). 
+
+# Modular arithmetic is a handy tool because it allows you to break integers up 
+# into pieces. For example, in the flights dataset, you can compute hour and minute 
+# from dep_time with:
+
+transmute(flights,
+          dep_time,
+          hour = dep_time %/% 100,
+          minute = dep_time %% 100
+)
+
+# Logs: log(), log2(), log10(). Logarithms are an incredibly useful transformation 
+# for dealing with data that ranges across multiple orders of magnitude. They also 
+# convert multiplicative relationships to additive, a feature we’ll come back to in 
+# modelling.
+
+# All else being equal, I recommend using log2() because it’s easy to interpret: a 
+# difference of 1 on the log scale corresponds to doubling on the original scale and 
+# a difference of -1 corresponds to halving.
+
+# Offsets: lead() and lag() allow you to refer to leading or lagging values. This allows 
+# you to compute running differences (e.g. x - lag(x)) or find when values change 
+# (x != lag(x)). 
+
+# They are most useful in conjunction with group_by(), which you’ll learn about shortly.
+
+(x <- 1:10)
+lag(x)
+
+lead(x)
+
+# Logical comparisons, <, <=, >, >=, !=, and ==, which you learned about earlier. 
+# If you’re doing a complex sequence of logical operations it’s often a good idea 
+# to store the interim values in new variables so you can check that each step is 
+# working as expected.
+
+# Ranking: there are a number of ranking functions, but you should start with min_rank(). 
+# It does the most usual type of ranking (e.g. 1st, 2nd, 2nd, 4th). The default gives 
+# smallest values the small ranks; use desc(x) to give the largest values the smallest 
+# ranks.
+y <- c(1, 2, 2, NA, 3, 4)
+min_rank(y)
+
+min_rank(desc(y))
+
+# If min_rank() doesn’t do what you need, look at the variants row_number(), dense_rank(), 
+# percent_rank(), cume_dist(), ntile(). See their help pages for more details.
+
+row_number(y)
+
+dense_rank(y)
+
+percent_rank(y)
+
+cume_dist(y)
+
+#-----------------------
+# 5.5.2 Exercises
+#-----------------------
+# Currently dep_time and sched_dep_time are convenient to look at, but hard to compute 
+# with because they’re not really continuous numbers. Convert them to a more convenient 
+# representation of number of minutes since midnight.
+
+# Compare air_time with arr_time - dep_time. What do you expect to see? What do you see? 
+# What do you need to do to fix it?
+  
+# Compare dep_time, sched_dep_time, and dep_delay. How would you expect those three 
+# numbers to be related?
+  
+# Find the 10 most delayed flights using a ranking function. How do you want to 
+# handle ties? Carefully read the documentation for min_rank().
+
+# What does 1:3 + 1:10 return? Why?
+  
+# What trigonometric functions does R provide?
+
+#-----------------------------------------------
+# 5.6 Grouped summaries with summarise()
+#-----------------------------------------------
+
+
+
+
+
+
+
 
 
 
