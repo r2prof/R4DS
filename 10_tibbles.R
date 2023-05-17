@@ -286,6 +286,7 @@ print(df)
 # When the tibble `df` is printed, it will display the first 10 rows and all columns that fit within the width of 
 # the console. At the footer, it will show the additional column names if there are more columns in the tibble. 
 # The number of additional column names displayed will be controlled by the `pillar.sigfig` option. 
+#----------------------------------
 
 
 
