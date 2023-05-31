@@ -81,6 +81,94 @@ ggplot(table1, aes(year, cases)) +
 # Typically a dataset will only suffer from one of these problems; it’ll only suffer from both if you’re 
 # really unlucky! To fix these problems, you’ll need the two most important functions in tidyr: pivot_longer() 
 # and pivot_wider().
+#
+#--------------------------------
+# 12.3.1 Longer
+#-------------------------------
+# A common problem is a dataset where some of the column names are not names of variables, but values of a 
+# variable. Take table4a: the column names 1999 and 2000 represent values of the year variable, the values in 
+#the 1999 and 2000 columns represent values of the cases variable, and each row represents two observations, 
+# not one.
+
+table4a
+#
+# To tidy a dataset like this, we need to pivot the offending columns into a new pair of variables. 
+# To describe that operation we need three parameters:
+#
+# The set of columns whose names are values, not variables. 
+# In this example, those are the columns 1999 and 2000.
+# The name of the variable to move the column names to. Here it is year.
+# The name of the variable to move the column values to. Here it’s cases.
+#
+# Together those parameters generate the call to pivot_longer():
+table4a %>% 
+  pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "cases")
+#
+# The columns to pivot are specified with dplyr::select() style notation. Here there are only two columns, 
+# so we list them individually. Note that “1999” and “2000” are non-syntactic names (because they don’t start 
+# with a letter) so we have to surround them in backticks. To refresh your memory of the other ways to select 
+# columns, see select year and cases do not exist in table4a so we put their names in quotes.
+#
+# In the final result, the pivoted columns are dropped, and we get new year and cases columns. Otherwise, the 
+# relationships between the original variables are preserved. Visually, this is shown in Figure 12.2.
+# pivot_longer() makes datasets longer by increasing the number of rows and decreasing the number of columns. 
+#
+# I don’t believe it makes sense to describe a dataset as being in “long form”. Length is a relative term, and 
+# you can only say (e.g.) that dataset A is longer than dataset B.
+#
+# We can use pivot_longer() to tidy table4b in a similar fashion. The only difference is the variable stored 
+# in the cell values:
+table4b %>% 
+  pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "population")
+#
+# To combine the tidied versions of table4a and table4b into a single tibble, we need to use 
+# dplyr::left_join(), which you’ll learn about in relational data.
+#
+tidy4a <- table4a %>% 
+  pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "cases")
+tidy4b <- table4b %>% 
+  pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "population")
+left_join(tidy4a, tidy4b)
+#
+#---------------------------
+#  12.3.2 Wider
+#---------------------------
+# pivot_wider() is the opposite of pivot_longer(). You use it when an observation is scattered across 
+# multiple rows. For example, take table2: an observation is a country in a year, but each observation 
+# is spread across two rows.
+table2
+#
+# To tidy this up, we first analyse the representation in similar way to pivot_longer(). This time, however, 
+# we only need two parameters:
+#
+# The column to take variable names from. Here, it’s type.
+# The column to take values from. Here it’s count.
+#
+# Once we’ve figured that out, we can use pivot_wider(), as shown programmatically below, and visually in 
+# Figure 12.3.
+table2 %>%
+  pivot_wider(names_from = type, values_from = count)
+#
+# As you might have guessed from their names, pivot_wider() and pivot_longer() are complements. 
+# pivot_longer() makes wide tables narrower and longer; pivot_wider() makes long tables shorter and wider.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
