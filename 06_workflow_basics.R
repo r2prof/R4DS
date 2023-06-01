@@ -2,7 +2,9 @@ seq(1, 10)
 x <- "hello world"
 my_variable <- 10
 my_variable
-# 
+#---------------------------------
+# 06 Workflow: scripts
+#---------------------------------
 # Tweak each of the following R commands so that they run correctly:
 library(tidyverse)
 
