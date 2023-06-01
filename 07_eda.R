@@ -157,9 +157,26 @@ ggplot(data = smaller, mapping = aes(x = carat, colour = cut)) +
 #. Why are there more diamonds at whole carats and common fractions of carats?
 #. Why are there more diamonds slightly to the right of each peak than there are slightly to the left of each peak?
 #. Why are there no diamonds bigger than 3 carats?
- 
-
-
+ggplot(data = smaller, mapping = aes(x = carat)) +
+  geom_histogram(binwidth = 0.01)
+#
+#
+# Clusters of similar values suggest that subgroups exist in your data. To understand the subgroups, ask:
+# How are the observations within each cluster similar to each other?
+#   
+#. How are the observations in separate clusters different from each other?
+#. How can you explain or describe the clusters?
+#. Why might the appearance of clusters be misleading?
+#
+# The histogram below shows the length (in minutes) of 272 eruptions of the Old Faithful Geyser in Yellowstone 
+# National Park. Eruption times appear to be clustered into two groups: there are short eruptions (of around 2 
+# minutes) and long eruptions (4-5 minutes), but little in between.
+#
+ggplot(data = faithful, mapping = aes(x = eruptions)) + 
+  geom_histogram(binwidth = 0.25)
+#
+# Many of the questions above will prompt you to explore a relationship between variables, for example, to see if 
+# the values of one variable can explain the behavior of another variable. We’ll get to that shortly.
 
 
 
