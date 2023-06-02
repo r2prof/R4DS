@@ -177,17 +177,78 @@ ggplot(data = faithful, mapping = aes(x = eruptions)) +
 #
 # Many of the questions above will prompt you to explore a relationship between variables, for example, to see if 
 # the values of one variable can explain the behavior of another variable. We’ll get to that shortly.
+#
+#------------------------------
+# 7.3.3 Unusual Values
+#------------------------------
+# Outliers are observations that are unusual; data points that don’t seem to fit the pattern. Sometimes outliers 
+# are data entry errors; other times outliers suggest important new science. When you have a lot of data, outliers 
+# are sometimes difficult to see in a histogram. 
+#
+# For example, take the distribution of the y variable from the diamonds dataset. The only evidence of outliers 
+# is the unusually wide limits on the x-axis.
+ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5)
+#
+# There are so many observations in the common bins that the rare bins are so short that you can’t see them 
+# (although maybe if you stare intently at 0 you’ll spot something). To make it easy to see the unusual values, 
+# we need to zoom to small values of the y-axis with coord_cartesian():
+ggplot(diamonds) + 
+  geom_histogram(mapping = aes(x = y), binwidth = 0.5) +
+  coord_cartesian(ylim = c(0, 50))
+#
+# (coord_cartesian() also has an xlim() argument for when you need to zoom into the x-axis. ggplot2 also has xlim() 
+# and ylim() functions that work slightly differently: they throw away the data outside the limits.)
+# 
+# This allows us to see that there are three unusual values: 0, ~30, and ~60. We pluck them out with dplyr:
+unusual <- diamonds %>% 
+filter(y < 3 | y > 20) %>% 
+  select(price, x, y, z) %>%
+   arrange(y)
+unusual
+#
+#------------------------------------------------------------------
+# Explanation of the code:
+# filter(y < 3 | y > 20): This operation filters the rows of the "diamonds" dataset based on a condition involving 
+# the variable "y". It selects only the rows where the value of "y" is less than 3 or greater than 20. 
+#
+# In other words, it keeps only the diamonds with an unusually small or unusually large value for the "y" variable.
+#
+# select(price, x, y, z): This operation selects specific variables from the filtered dataset. It keeps only the 
+# columns/variables named "price", "x", "y", and "z" in the resulting dataset. This means we are interested in the 
+# price of the diamonds and their dimensions in terms of length (x), width (y), and depth (z).
+# 
+# arrange(y): This operation arranges the rows of the dataset in ascending order based on the values of the "y" 
+# variable. This means that the resulting dataset will be sorted from the smallest "y" value to the largest "y" 
+# value.
+#------------------------------------------------------------------
+#
+# The y variable measures one of the three dimensions of these diamonds, in mm. We know that diamonds can’t have a 
+# width of 0mm, so these values must be incorrect. We might also suspect that measurements of 32mm and 59mm are 
+# implausible: those diamonds are over an inch long, but don’t cost hundreds of thousands of dollars!
+# 
+# It’s good practice to repeat your analysis with and without the outliers. If they have minimal effect on the 
+# results, and you can’t figure out why they’re there, it’s reasonable to replace them with missing values, and 
+# move on. 
+#
+# However, if they have a substantial effect on your results, you shouldn’t drop them without justification. 
+# You’ll need to figure out what caused them (e.g. a data entry error) and disclose that you removed them in 
+# your write-up.
 
-
-
-
-
-
-
-
-
-
-
+#---------------------------------
+# 7.3.4 Exercises
+#---------------------------------
+# 1. Explore the distribution of each of the x, y, and z variables in diamonds. What do you learn? Think about a 
+#    diamond and how you might decide which dimension is the length, width, and depth.
+# 
+# 2. Explore the distribution of price. Do you discover anything unusual or surprising? (Hint: Carefully think 
+#    about the binwidth and make sure you try a wide range of values.)
+# 
+# 3. How many diamonds are 0.99 carat? How many are 1 carat? What do you think is the cause of the difference?
+#   
+# 4. Compare and contrast coord_cartesian() vs xlim() or ylim() when zooming in on a histogram. What happens if 
+#    you leave binwidth unset? What happens if you try and zoom so only half a bar shows?
+#----------------------------------
 
 
 
