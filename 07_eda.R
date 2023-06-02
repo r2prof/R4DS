@@ -249,10 +249,24 @@ unusual
 # 4. Compare and contrast coord_cartesian() vs xlim() or ylim() when zooming in on a histogram. What happens if 
 #    you leave binwidth unset? What happens if you try and zoom so only half a bar shows?
 #----------------------------------
+#
+#----------------------------------
+# 7.4 Missing Values
+#----------------------------------
+# If you’ve encountered unusual values in your dataset, and simply want to move on to the rest of your analysis, 
+# you have two options.
+#
+# 1. Drop the entire row with the strange values:
+diamonds2 <- diamonds %>% 
+  filter(between(y, 3, 20))
+#
+# Overall, the code creates a new dataset called "diamonds2" by filtering the original "diamonds" dataset to 
+# include only the diamonds with values of "y" between 3 and 20 (inclusive). The resulting dataset will contain 
+# diamonds with lengths (or widths) within that specified range.
 
-
-
-
+# I don’t recommend this option because just because one measurement is invalid, doesn’t mean all the measurements 
+# are. Additionally, if you have low quality data, by time that you’ve applied this approach to every variable you 
+# might find that you don’t have any data left!
 
 
 
