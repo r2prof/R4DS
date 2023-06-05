@@ -268,9 +268,389 @@ diamonds2 <- diamonds %>%
 # are. Additionally, if you have low quality data, by time that you’ve applied this approach to every variable you 
 # might find that you don’t have any data left!
 
+# Instead, I recommend replacing the unusual values with missing values. The easiest way to do this is to use 
+# mutate() to replace the variable with a modified copy. You can use the ifelse() function to replace unusual 
+# values with NA:
+
+diamonds2 <- diamonds %>% 
+  mutate(y = ifelse(y < 3 | y > 20, NA, y))
+#----------------------------------------
+# Code explanation
+
+# mutate(y = ifelse(y < 3 | y > 20, NA, y)): This line adds a new column called "y" to the "diamonds2" dataset, 
+# based on a conditional statement. Here's what each part of the statement means:
+
+# y < 3 | y > 20: This is the condition being evaluated. It checks if the values in the existing "y" column of 
+# the dataset are less than 3 or greater than 20. The | symbol represents the logical OR operation, so the 
+# condition is true if either of the sub-conditions is true.
+
+# ifelse(): This is a function in R that allows you to perform conditional operations. It takes three arguments: 
+# the condition, the value to return if the condition is true, and the value to return if the condition is false.
+
+# NA: In R, NA represents missing or undefined values. In this case, if the condition is true (i.e., if the value
+# in "y" is less than 3 or greater than 20), the corresponding value in the "y" column of "diamonds2" will be set 
+# to NA.
+
+# y: If the condition is false (i.e., the value in "y" is between 3 and 20 inclusive), the corresponding value 
+# in the "y" column of "diamonds2" will remain unchanged.
+
+# Therefore, the code assigns NA to any values in the "y" column of "diamonds2" that are less than 3 or greater 
+# than 20, while leaving the other values unchanged.
+#---------------------------------------
+
+# Alternatively to ifelse, use dplyr::case_when(). case_when() is particularly useful inside mutate when you 
+# want to create a new variable that relies on a complex combination of existing variables.
+# 
+# Like R, ggplot2 subscribes to the philosophy that missing values should never silently go missing. It’s not 
+# obvious where you should plot missing values, so ggplot2 doesn’t include them in the plot, but it does warn 
+# that they’ve been removed:
+ggplot(data = diamonds2, mapping = aes(x = x, y = y)) + 
+  geom_point()
+
+# To suppress that warning, set na.rm = TRUE:
+ggplot(data = diamonds2, mapping = aes(x = x, y = y)) + 
+  geom_point(na.rm = TRUE)
+
+# Other times you want to understand what makes observations with missing values different to observations 
+# with recorded values. For example, in nycflights13::flights, missing values in the dep_time variable indicate 
+# that the flight was cancelled. 
+
+# So you might want to compare the scheduled departure times for cancelled and non-cancelled times. You can do 
+# this by making a new variable with is.na().
+nycflights13::flights %>% 
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  ) %>% 
+  ggplot(mapping = aes(sched_dep_time)) + 
+    geom_freqpoly(mapping = aes(colour = cancelled), binwidth = 1/4)
+
+# However this plot isn’t great because there are many more non-cancelled flights than cancelled flights. 
+# In the next section we’ll explore some techniques for improving this comparison.
+#---------------------------
+# 7.4.1 Exercises
+#---------------------------
+# 1. What happens to missing values in a histogram? What happens to missing values in a bar chart? Why is there a 
+#    difference?
+  
+# 2. What does na.rm = TRUE do in mean() and sum()?
+#
+#---------------------------
+# If variation describes the behavior within a variable, covariation describes the behavior between variables. 
+# Covariation is the tendency for the values of two or more variables to vary together in a related way. The best 
+# way to spot covariation is to visualise the relationship between two or more variables. How you do that should 
+# again depend on the type of variables involved.
+
+#-------------------------------------------------
+#  7.5.1 A categorical and continuous variable
+#-------------------------------------------------
+# It’s common to want to explore the distribution of a continuous variable broken down by a categorical variable, 
+# as in the previous frequency polygon. The default appearance of geom_freqpoly() is not that useful for that sort 
+# of comparison because the height is given by the count. That means if one of the groups is much smaller than the 
+# others, it’s hard to see the differences in shape. For example, let’s explore how the price of a diamond varies 
+# with its quality:
+
+ggplot(data = diamonds, mapping = aes(x = price)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+
+# It’s hard to see the difference in distribution because the overall counts differ so much:
+
+ggplot(diamonds) + 
+  geom_bar(mapping = aes(x = cut))
+
+# To make the comparison easier we need to swap what is displayed on the y-axis. Instead of displaying count, 
+# we’ll display density, which is the count standardised so that the area under each frequency polygon is one.
+
+ggplot(data = diamonds, mapping = aes(x = price, y = ..density..)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+
+# There’s something rather surprising about this plot - it appears that fair diamonds (the lowest quality) have 
+# the highest average price! But maybe that’s because frequency polygons are a little hard to interpret - there’s 
+# a lot going on in this plot.
+
+# Another alternative to display the distribution of a continuous variable broken down by a categorical variable 
+# is the boxplot. A boxplot is a type of visual shorthand for a distribution of values that is popular among 
+# statisticians. Each boxplot consists of:
+  
+#  A box that stretches from the 25th percentile of the distribution to the 75th percentile, a distance known as 
+#  the interquartile range (IQR). In the middle of the box is a line that displays the median, i.e. 50th percentile, 
+#  of the distribution. These three lines give you a sense of the spread of the distribution and whether or not the 
+#  distribution is symmetric about the median or skewed to one side.
+
+#  Visual points that display observations that fall more than 1.5 times the IQR from either edge of the box. 
+#  These outlying points are unusual so are plotted individually.
+
+#  A line (or whisker) that extends from each end of the box and goes to the farthest non-outlier point in the 
+#  distribution.
+
+#  Let’s take a look at the distribution of price by cut using geom_boxplot():
+
+ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+  geom_boxplot()
+
+# We see much less information about the distribution, but the boxplots are much more compact so we can more 
+# easily compare them (and fit more on one plot). It supports the counterintuitive finding that better quality 
+# diamonds are cheaper on average! In the exercises, you’ll be challenged to figure out why.
+
+# cut is an ordered factor: fair is worse than good, which is worse than very good and so on. Many categorical 
+# variables don’t have such an intrinsic order, so you might want to reorder them to make a more informative display.
+# One way to do that is with the reorder() function.
+
+# For example, take the class variable in the mpg dataset. You might be interested to know how highway mileage 
+# varies across classes:
+
+ggplot(data = mpg, mapping = aes(x = class, y = hwy)) +
+  geom_boxplot()
+
+# To make the trend easier to see, we can reorder class based on the median value of hwy:
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy))
+
+# If you have long variable names, geom_boxplot() will work better if you flip it 90°. You can do that with 
+# coord_flip().
+
+ggplot(data = mpg) +
+  geom_boxplot(mapping = aes(x = reorder(class, hwy, FUN = median), y = hwy)) +
+  coord_flip()
+
+#---------------------------------
+# 7.5.1.1 Exercises
+#---------------------------------
+# 1. Use what you’ve learned to improve the visualisation of the departure times of cancelled vs. 
+#    non-cancelled flights.
+# 
+# 2. What variable in the diamonds dataset is most important for predicting the price of a diamond? 
+#    How is that variable correlated with cut? Why does the combination of those two relationships 
+#    lead to lower quality diamonds being more expensive?
+#   
+# 3. Install the ggstance package, and create a horizontal boxplot. How does this compare to using 
+#    coord_flip()?
+#   
+# 4. One problem with boxplots is that they were developed in an era of much smaller datasets and 
+#    tend to display a prohibitively large number of “outlying values”. One approach to remedy this 
+#    problem is the letter value plot. Install the lvplot package, and try using geom_lv() to display 
+#    the distribution of price vs cut. What do you learn? How do you interpret the plots?
+#   
+# 5. Compare and contrast geom_violin() with a facetted geom_histogram(), or a coloured geom_freqpoly(). 
+#    What are the pros and cons of each method?
+#   
+# 6. If you have a small dataset, it’s sometimes useful to use geom_jitter() to see the relationship between a 
+#    continuous and categorical variable. The ggbeeswarm package provides a number of methods similar to 
+#    geom_jitter(). List them and briefly describe what each one does.
+
+#-------------------------------------------
+# 7.5.2 Two categorical variables
+#-------------------------------------------
+# To visualise the covariation between categorical variables, you’ll need to count the number of observations 
+# for each combination. One way to do that is to rely on the built-in geom_count():
+
+ggplot(data = diamonds) +
+  geom_count(mapping = aes(x = cut, y = color))
+
+# The size of each circle in the plot displays how many observations occurred at each combination of values. 
+# Covariation will appear as a strong correlation between specific x values and specific y values.
+
+# Another approach is to compute the count with dplyr:
+diamonds %>% 
+  count(color, cut)
+
+# Then visualise with geom_tile() and the fill aesthetic:
+diamonds %>% 
+  count(color, cut) %>%  
+  ggplot(mapping = aes(x = color, y = cut)) +
+  geom_tile(mapping = aes(fill = n))
+
+# If the categorical variables are unordered, you might want to use the seriation package to simultaneously 
+# reorder the rows and columns in order to more clearly reveal interesting patterns. For larger plots, you might 
+# want to try the d3heatmap or heatmaply packages, which create interactive plots.
+
+#-----------------------------
+# 7.5.2.1 Exercises
+#----------------------------- 
+# 1. How could you rescale the count dataset above to more clearly show the distribution of cut within colour, or 
+#    colour within cut?
+  
+# 2. Use geom_tile() together with dplyr to explore how average flight delays vary by destination and month of year. 
+#    What makes the plot difficult to read? How could you improve it?
+  
+# 3. Why is it slightly better to use aes(x = color, y = cut) rather than aes(x = cut, y = color) in the example 
+#    above?
+
+#------------------------------------
+#  7.5.3 Two continuous variables
+#------------------------------------
+# You’ve already seen one great way to visualise the covariation between two continuous variables: draw a 
+# scatterplot with geom_point(). You can see covariation as a pattern in the points. For example, you can 
+# see an exponential relationship between the carat size and price of a diamond.
+
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = carat, y = price))
+
+# Scatterplots become less useful as the size of your dataset grows, because points begin to overplot, and pile 
+# up into areas of uniform black (as above). You’ve already seen one way to fix the problem: using the alpha 
+# aesthetic to add transparency.
+
+ggplot(data = diamonds) + 
+  geom_point(mapping = aes(x = carat, y = price), alpha = 1 / 100)
+
+# But using transparency can be challenging for very large datasets. Another solution is to use bin. Previously 
+# you used geom_histogram() and geom_freqpoly() to bin in one dimension. Now you’ll learn how to use geom_bin2d() 
+# and geom_hex() to bin in two dimensions.
+
+# geom_bin2d() and geom_hex() divide the coordinate plane into 2d bins and then use a fill color to display how 
+# many points fall into each bin. geom_bin2d() creates rectangular bins. geom_hex() creates hexagonal bins. 
+
+# You will need to install the hexbin package to use geom_hex().
+
+ggplot(data = diamonds) +
+  geom_bin2d(mapping = aes(x = carat, y = price))
+
+# install.packages("hexbin")
+ggplot(data = diamonds) +
+  geom_hex(mapping = aes(x = carat, y = price))
+#
+# Another option is to bin one continuous variable so it acts like a categorical variable. Then you can use one of 
+# the techniques for visualising the combination of a categorical and a continuous variable that you learned about. 
+# For example, you could bin carat and then for each group, display a boxplot:
+
+ggplot(data = diamonds, mapping = aes(x = carat, y = price)) + 
+  geom_boxplot(mapping = aes(group = cut_width(carat, 0.1)))
+
+# cut_width(x, width), as used above, divides x into bins of width width. By default, boxplots look roughly the 
+# same (apart from number of outliers) regardless of how many observations there are, so it’s difficult to tell 
+# that each boxplot summarises a different number of points. One way to show that is to make the width of the 
+# boxplot proportional to the number of points with varwidth = TRUE.
+
+# Another approach is to display approximately the same number of points in each bin. That’s the job of cut_number():
+ggplot(data = diamonds, mapping = aes(x = carat, y = price)) + 
+  geom_boxplot(mapping = aes(group = cut_number(carat, 20)))
+
+#---------------------------------
+#  7.5.3.1 Exercises
+#---------------------------------
+# 1. Instead of summarising the conditional distribution with a boxplot, you could use a frequency polygon. 
+#    What do you need to consider when using cut_width() vs cut_number()? How does that impact a visualisation 
+#    of the 2d distribution of carat and price?
+#   
+# 2. Visualise the distribution of carat, partitioned by price.
+# 
+# 3. How does the price distribution of very large diamonds compare to small diamonds? Is it as you expect, or 
+#    does it surprise you?
+#   
+# 4. Combine two of the techniques you’ve learned to visualise the combined distribution of cut, carat, and price.
+# 
+# 5. Two dimensional plots reveal outliers that are not visible in one dimensional plots. For example, some points 
+#    in the plot below have an unusual combination of x and y values, which makes the points outliers even though 
+#    their x and y values appear normal when examined separately.
+#--------------------------------
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = x, y = y)) +
+  coord_cartesian(xlim = c(4, 11), ylim = c(4, 11))
+
+# Why is a scatterplot a better display than a binned plot for this case?
+
+#---------------------------------------
+# 7.6 Patterns and models
+#---------------------------------------
+# Patterns in your data provide clues about relationships. If a systematic relationship exists between two 
+# variables it will appear as a pattern in the data. If you spot a pattern, ask yourself:
+
+# Could this pattern be due to coincidence (i.e. random chance)?
+
+# How can you describe the relationship implied by the pattern?
+  
+# How strong is the relationship implied by the pattern?
+  
+# What other variables might affect the relationship?
+  
+# Does the relationship change if you look at individual subgroups of the data?
+  
+# A scatterplot of Old Faithful eruption lengths versus the wait time between eruptions shows a pattern: longer 
+# wait times are associated with longer eruptions. 
+
+# The scatterplot also displays the two clusters that we noticed above.
+ggplot(data = faithful) + 
+  geom_point(mapping = aes(x = eruptions, y = waiting))
+
+# Patterns provide one of the most useful tools for data scientists because they reveal covariation. If you 
+# think of variation as a phenomenon that creates uncertainty, covariation is a phenomenon that reduces it. 
+# If two variables covary, you can use the values of one variable to make better predictions about the values 
+# of the second. If the covariation is due to a causal relationship (a special case), then you can use the 
+# value of one variable to control the value of the second.
+
+# Models are a tool for extracting patterns out of data. For example, consider the diamonds data. It’s hard 
+# to understand the relationship between cut and price, because cut and carat, and carat and price are tightly 
+# related. It’s possible to use a model to remove the very strong relationship between price and carat so we can 
+# explore the subtleties that remain. 
+
+# The following code fits a model that predicts price from carat and then computes the residuals (the difference 
+# between the predicted value and the actual value). The residuals give us a view of the price of the diamond, 
+# once the effect of carat has been removed.
+library(modelr)
+
+mod <- lm(log(price) ~ log(carat), data = diamonds)
+
+diamonds2 <- diamonds %>% 
+  add_residuals(mod) %>% 
+  mutate(resid = exp(resid))
+
+ggplot(data = diamonds2) + 
+  geom_point(mapping = aes(x = carat, y = resid))
+
+# Once you’ve removed the strong relationship between carat and price, you can see what you expect in the 
+# relationship between cut and price: relative to their size, better quality diamonds are more expensive.
+
+ggplot(data = diamonds2) + 
+  geom_boxplot(mapping = aes(x = cut, y = resid))
+
+# You’ll learn how models, and the modelr package, work in the final part of the book, model. We’re saving 
+# modelling for later because understanding what models are and how they work is easiest once you have tools 
+# of data wrangling and programming in hand.
+
+#-------------------------------
+#  7.7 ggplot2 calls
+#-------------------------------
+# As we move on from these introductory chapters, we’ll transition to a more concise expression of ggplot2 code. 
+# So far we’ve been very explicit, which is helpful when you are learning:
+ggplot(data = faithful, mapping = aes(x = eruptions)) + 
+  geom_freqpoly(binwidth = 0.25)
+
+# Typically, the first one or two arguments to a function are so important that you should know them by heart. 
+# The first two arguments to ggplot() are data and mapping, and the first two arguments to aes() are x and y. 
+# In the remainder of the book, we won’t supply those names. That saves typing, and, by reducing the amount of 
+# boilerplate, makes it easier to see what’s different between plots. That’s a really important programming concern 
+# that we’ll come back in functions.
+
+#Rewriting the previous plot more concisely yields:
+ggplot(faithful, aes(eruptions)) + 
+  geom_freqpoly(binwidth = 0.25)
+
+# Sometimes we’ll turn the end of a pipeline of data transformation into a plot. Watch for the transition 
+# from %>% to +. I wish this transition wasn’t necessary but unfortunately ggplot2 was created before the 
+# pipe was discovered.
+diamonds %>% 
+  count(cut, clarity) %>% 
+  ggplot(aes(clarity, cut, fill = n)) + 
+  geom_tile()
+
+#--------------------------------
+# 7.8 Learning more
+#--------------------------------
+# If you want to learn more about the mechanics of ggplot2, I’d highly recommend grabbing a copy of the ggplot2 
+# book: https://amzn.com/331924275X. It’s been recently updated, so it includes dplyr and tidyr code, and has 
+# much more space to explore all the facets of visualisation. Unfortunately the book isn’t generally available 
+# for free, but if you have a connection to a university you can probably get an electronic version for free 
+# through SpringerLink.
+
+# Another useful resource is the R Graphics Cookbook by Winston Chang. Much of the contents are available online 
+# at http://www.cookbook-r.com/Graphs/.
+
+# I also recommend Graphical Data Analysis with R, by Antony Unwin. This is a book-length treatment similar to 
+# the material covered in this chapter, but has the space to go into much greater depth.
 
 
 
 
-
-
+  
