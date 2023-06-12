@@ -212,6 +212,228 @@ parse_number("123.456.789", locale = locale(grouping_mark = "."))
 # Used in Switzerland
 parse_number("123'456'789", locale = locale(grouping_mark = "'"))
 
+#---------------------
+#  11.3.2 Strings 
+#---------------------
+# It seems like parse_character() should be really simple — it could just return its input. Unfortunately life 
+# isn’t so simple, as there are multiple ways to represent the same string. To understand what’s going on, we 
+# need to dive into the details of how computers represent strings. In R, we can get at the underlying 
+# representation of a string using charToRaw():
+charToRaw("Hadley")
+
+# Each hexadecimal number represents a byte of information: 48 is H, 61 is a, and so on. The mapping from 
+# hexadecimal number to character is called the encoding, and in this case the encoding is called ASCII. 
+# ASCII does a great job of representing English characters, because it’s the American Standard Code for 
+# Information Interchange.
+
+# Things get more complicated for languages other than English. In the early days of computing there were 
+# many competing standards for encoding non-English characters, and to correctly interpret a string you needed 
+# to know both the values and the encoding. For example, two common encodings are Latin1 (aka ISO-8859-1, used 
+# for Western European languages) and Latin2 (aka ISO-8859-2, used for Eastern European languages). In Latin1, 
+# the byte b1 is “±”, but in Latin2, it’s “ą”! Fortunately, today there is one standard that is supported almost 
+# everywhere: UTF-8. UTF-8 can encode just about every character used by humans today, as well as many extra 
+# symbols (like emoji!).
+
+# readr uses UTF-8 everywhere: it assumes your data is UTF-8 encoded when you read it, and always uses it when
+# writing. This is a good default, but will fail for data produced by older systems that don’t understand UTF-8. 
+# If this happens to you, your strings will look weird when you print them. Sometimes just one or two characters 
+# might be messed up; other times you’ll get complete gibberish. For example:
+
+x1 <- "El Ni\xf1o was particularly bad this year"
+x2 <- "\x82\xb1\x82\xf1\x82\xc9\x82\xbf\x82\xcd"
+x1
+x2
+
+# To fix the problem you need to specify the encoding in parse_character():
+parse_character(x1, locale = locale(encoding = "Latin1"))
+parse_character(x2, locale = locale(encoding = "Shift-JIS"))
+
+# How do you find the correct encoding? If you’re lucky, it’ll be included somewhere in the data documentation. 
+# Unfortunately, that’s rarely the case, so readr provides guess_encoding() to help you figure it out. It’s not 
+# foolproof, and it works better when you have lots of text (unlike here), but it’s a reasonable place to start. 
+# Expect to try a few different encodings before you find the right one.
+
+guess_encoding(charToRaw(x1))
+guess_encoding(charToRaw(x2))
+
+# The first argument to guess_encoding() can either be a path to a file, or, as in this case, a raw vector 
+# (useful if the strings are already in R).
+
+# Encodings are a rich and complex topic, and I’ve only scratched the surface here. If you’d like to learn more 
+# I’d recommend reading the detailed explanation at http://kunststube.net/encoding/.
+
+#----------------------------
+#  11.3.3 Factors
+#----------------------------
+# R uses factors to represent categorical variables that have a known set of possible values. Give parse_factor() 
+# a vector of known levels to generate a warning whenever an unexpected value is present:
+
+fruit <- c("apple", "banana")
+parse_factor(c("apple", "banana", "bananana"), levels = fruit)
+
+# But if you have many problematic entries, it’s often easier to leave as character vectors and then use the tools 
+# you’ll learn about in strings and factors to clean them up.
+
+#----------------------------------------
+# 11.3.4 Dates, date-times, and times 
+#----------------------------------------
+# You pick between three parsers depending on whether you want a date (the number of days since 1970-01-01), a 
+# date-time (the number of seconds since midnight 1970-01-01), or a time (the number of seconds since midnight). 
+# When called without any additional arguments:
+
+# parse_datetime() expects an ISO8601 date-time. ISO8601 is an international standard in which the components of 
+# a date are organised from biggest to smallest: year, month, day, hour, minute, second.
+
+parse_datetime("2010-10-01T2010")
+
+# If time is omitted, it will be set to midnight
+parse_datetime("20101010")
+
+# This is the most important date/time standard, and if you work with dates and times frequently, I recommend 
+# reading https://en.wikipedia.org/wiki/ISO_8601
+
+# parse_date() expects a four digit year, a - or /, the month, a - or /, then the day:
+parse_date("2010-10-01")
+
+# parse_time() expects the hour, :, minutes, optionally : and seconds, and an optional am/pm specifier:
+
+library(hms)
+parse_time("01:10 am")
+
+parse_time("20:10:01")
+
+# Base R doesn’t have a great built in class for time data, so we use the one provided in the hms package.
+# If these defaults don’t work for your data you can supply your own date-time format, built up of the 
+# following pieces:
+
+
+# Year
+# %Y (4 digits). 
+# %y (2 digits); 00-69 -> 2000-2069, 70-99 -> 1970-1999. 
+
+# Month
+# %m (2 digits). 
+# %b (abbreviated name, like “Jan”). 
+# %B (full name, “January”). 
+
+# Day
+# %d (2 digits). 
+# %e (optional leading space). 
+
+# Time
+# %H 0-23 hour. 
+# %I 0-12, must be used with %p. 
+# %p AM/PM indicator. 
+
+# %M minutes. 
+# %S integer seconds. 
+# %OS real seconds. 
+# %Z Time zone (as name, e.g. America/Chicago). Beware of abbreviations: if you’re American, note that “EST” is 
+# a Canadian time zone that does not have daylight savings time. It is not Eastern Standard Time! We’ll come back 
+# to this time zones. 
+# %z (as offset from UTC, e.g. +0800). 
+
+# Non-digits
+# %. skips one non-digit character. 
+# %* skips any number of non-digits. 
+
+# The best way to figure out the correct format is to create a few examples in a character vector, and test with 
+# one of the parsing functions. For example:
+parse_date("01/02/15", "%m/%d/%y")
+
+parse_date("01/02/15", "%d/%m/%y")
+
+parse_date("01/02/15", "%y/%m/%d")
+
+# If you’re using %b or %B with non-English month names, you’ll need to set the lang argument to locale(). 
+# See the list of built-in languages in date_names_langs(), or if your language is not already included, 
+# create your own with date_names().
+
+parse_date("1 janvier 2015", "%d %B %Y", locale = locale("fr"))
+
+#-------------------------
+#  11.4 Parsing a file
+#-------------------------
+# Now that you’ve learned how to parse an individual vector, it’s time to return to the beginning and explore 
+# how readr parses a file. There are two new things that you’ll learn about in this section:
+  
+# 1. How readr automatically guesses the type of each column.
+# 2. How to override the default specification.
+
+#------------------------
+#  11.4.1 Strategy
+#------------------------
+# readr uses a heuristic to figure out the type of each column: it reads the first 1000 rows and uses some 
+# (moderately conservative) heuristics to figure out the type of each column. You can emulate this process 
+# with a character vector using guess_parser(), which returns readr’s best guess, and parse_guess() which uses 
+# that guess to parse the column:
+
+guess_parser("2010-10-01")
+
+guess_parser("15:01")
+
+guess_parser(c("TRUE", "FALSE"))
+
+guess_parser(c("1", "5", "9"))
+
+guess_parser(c("12,352,561"))
+
+str(parse_guess("2010-10-10"))
+
+# If none of these rules apply, then the column will stay as a vector of strings.
+
+#-------------------
+# 11.4.2 Problems
+#--------------------
+# These defaults don’t always work for larger files. There are two basic problems:
+ 
+#   1. The first thousand rows might be a special case, and readr guesses a type that is not sufficiently general. 
+#      For example, you might have a column of doubles that only contains integers in the first 1000 rows.
+#   2. The column might contain a lot of missing values. If the first 1000 rows contain only NAs, readr will guess 
+#      that it’s a logical vector, whereas you probably want to parse it as something more specific.
+
+# readr contains a challenging CSV that illustrates both of these problems:
+challenge <- read_csv(readr_example("challenge.csv"))
+problems(challenge)
+tail(challenge)
+
+# That suggests we need to use a date parser instead. To fix the call, start by copying and pasting the column 
+# specification into your original call:
+
+challenge <- read_csv(
+  readr_example("challenge.csv"), 
+  col_types = cols(
+    x = col_double(),
+    y = col_logical()
+  )
+)
+
+# Then you can fix the type of the y column by specifying that y is a date column:
+  
+challenge <- read_csv(
+    readr_example("challenge.csv"), 
+    col_types = cols(
+      x = col_double(),
+      y = col_date()
+    )
+  )
+tail(challenge)
+
+# Every parse_xyz() function has a corresponding col_xyz() function. You use parse_xyz() when the data is in 
+# a character vector in R already; you use col_xyz() when you want to tell readr how to load the data.
+
+# I highly recommend always supplying col_types, building up from the print-out provided by readr. This ensures 
+# that you have a consistent and reproducible data import script. If you rely on the default guesses and your 
+# data changes, readr will continue to read it in. If you want to be really strict, use stop_for_problems(): that 
+# will throw an error and stop your script if there are any parsing problems.
+
+
+
+
+
+
+
+
 
 
 
